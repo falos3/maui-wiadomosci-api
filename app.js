@@ -1,23 +1,28 @@
 const express = require('express');
+const cors = require('cors');
 const app = express();
-const fs = require('fs');
-const { Octokit } = require("@octokit/rest"); // GitHub API
 const PORT = process.env.PORT || 5000;
 
+// Middleware
+app.use(cors());
 app.use(express.json());
 
-// Przykład: zapisanie wiadomości do XML
-app.post('/send', async (req, res) => {
+// Główna trasa do odbierania wiadomości
+app.post('/message', (req, res) => {
   const { od, doUser, tresc } = req.body;
 
-  const wiadomosc = {
-    Od: od,
-    Do: doUser,
-    Tresc: tresc,
-    Data: new Date().toISOString()
-  };
+  if (!od || !doUser || !tresc) {
+    return res.status(400).json({ error: 'Brakuje danych (od, doUser lub tresc)' });
+  }
 
-  // TODO: pobierz istniejące wiadomości z GitHuba (plik XML), dodaj nową, zapisz z powrotem
+  console.log(`📩 Wiadomość od: ${od} do: ${doUser}`);
+  console.log(`✉️ Treść: ${tresc}`);
 
-  res.status(200).json({ status: 'OK', wiadomosc });
+  // Tu można np. zapisać do pliku, Firebase, GitHub XML itd.
+  res.status(200).json({ status: 'sent', od, doUser, tresc });
+});
+
+// Start serwera
+app.listen(PORT, () => {
+  console.log(`✅ API działa na porcie ${PORT}`);
 });
