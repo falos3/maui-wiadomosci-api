@@ -1,25 +1,39 @@
-// 1. Wczytanie biblioteki express
 const express = require('express');
-
-// 2. Tworzymy aplikację
+const cors = require('cors');
+const fs = require('fs');
+const path = require('path');
 const app = express();
 
-// 3. Port – domyślnie 5000 albo z Render
 const PORT = process.env.PORT || 5000;
 
-// 4. Parsujemy dane JSON z żądań POST
+app.use(cors());
 app.use(express.json());
 
-// 5. Prosty endpoint POST do odbierania wiadomości
-app.post('/message', (req, res) => {
-  const { toUser, message } = req.body;
+const MESSAGES_FILE = path.join(__dirname, 'messages.json');
 
-  // 👇 Tu można dodać zapis do pliku, bazy, GitHub itd.
-  console.log(`📨 Nowa wiadomość do: ${toUser}, treść: ${message}`);
+// Upewnij się, że plik istnieje
+if (!fs.existsSync(MESSAGES_FILE)) {
+  fs.writeFileSync(MESSAGES_FILE, '[]');
+}
 
-  // 6. Odpowiedź
-  res.status(200).json({ status: 'sent', toUser, message });
+// ZAPISZ wiadomość
+app.post('/send', (req, res) => {
+  const { od, doUser, tresc } = req.body;
+  const nowa = { od, doUser, tresc, czas: new Date().toISOString() };
+
+  const dane = JSON.parse(fs.readFileSync(MESSAGES_FILE));
+  dane.push(nowa);
+  fs.writeFileSync(MESSAGES_FILE, JSON.stringify(dane, null, 2));
+
+  res.status(200).json({ status: 'sent' });
 });
 
-// 7. Start serwera
-app.listen(PORT, () => console.log(`🚀 API działa na porcie ${PORT}`));
+// ODCZYTAJ wiadomości dla użytkownika
+app.get('/messages/:user', (req, res) => {
+  const user = req.params.user;
+  const dane = JSON.parse(fs.readFileSync(MESSAGES_FILE));
+  const dlaUsera = dane.filter(msg => msg.doUser === user);
+  res.json(dlaUsera);
+});
+
+app.listen(PORT, () => console.log(`API działa na porcie ${PORT}`));
